@@ -28,7 +28,7 @@ def getFileList(myDir):
     return [file for file in myDir.glob("[!~.]*.xlsx")]
 
 
-def createSpreadsheetWithValues(path, filename, filenameExtra, values, newValues, filteredColumn, min):
+def createSpreadsheetWithValues(path, filename, filenameExtra, values, newValues, filter = False, min = ''):
     ''' print out a new spreadsheet with the supplied values (columns in newValues with the same title replace the original version in values, can also use filter columns to replace values within a column rather than an entire column)'''
     
     wb = Workbook()
@@ -37,7 +37,6 @@ def createSpreadsheetWithValues(path, filename, filenameExtra, values, newValues
     col = 1
     
     #print(values)
-
     #print(newValues)
     
     for title, column in values.items():
@@ -48,16 +47,22 @@ def createSpreadsheetWithValues(path, filename, filenameExtra, values, newValues
         if title in newValues.keys():
             column = newValues[title]
 
-        filteredColumn = zip(column, filter)           
+        if filter:
+            filteredColumn = zip(column, filter)           
 
-        for filteredRow in filteredColumn:
-            #print(str(row[1]) + ": " + str(x) + ", " + str(y))
-            if (min and filteredRow[1]) or not min:
-                newSheet.cell(row, col, filteredRow[0])
-                row+=1
+            for filteredRow in filteredColumn:
+                #print(str(row[1]) + ": " + str(x) + ", " + str(y))
+                # To do: this needs fixing as setting a minimum value won't work
+                if (min and filteredRow[1]) or not min:
+                    newSheet.cell(row, col, filteredRow[0])
+                    row+=1
+        else:
+            for cell in column:
+                newSheet.cell(row, col, cell)
+                row+=1           
             
         col+=1 
-    
+
     if row > 2:   
         if not os.path.exists(path):
             os.makedirs(path)
@@ -65,3 +70,5 @@ def createSpreadsheetWithValues(path, filename, filenameExtra, values, newValues
         newFilename = os.path.splitext(os.path.basename(filename))[0] + "_" + str(filenameExtra) + os.path.splitext(os.path.basename(filename))[1]
         newFile = os.path.join(path, newFilename)  
         wb.save(newFile)
+
+        print("New file " + newFile)
