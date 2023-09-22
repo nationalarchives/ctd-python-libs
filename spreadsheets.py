@@ -35,6 +35,7 @@ def createSpreadsheetWithValues(path, filename, filenameExtra, values, newValues
     newSheet = wb.active
     
     col = 1
+    maxRow = 0
     
     #print(values)
     #print(newValues)
@@ -46,6 +47,7 @@ def createSpreadsheetWithValues(path, filename, filenameExtra, values, newValues
         
         if title in newValues.keys():
             column = newValues[title]
+            #print("Length of " + title + " column: " + str(len(column)))
 
         if filter:
             filteredColumn = zip(column, filter)           
@@ -59,11 +61,16 @@ def createSpreadsheetWithValues(path, filename, filenameExtra, values, newValues
         else:
             for cell in column:
                 newSheet.cell(row, col, cell)
-                row+=1           
-            
+                row+=1  
+
+        if row > maxRow:
+            maxRow = row
+
+        #print(title + ": " + str(row))    
         col+=1 
 
-    if row > 2:   
+    #print(maxRow)
+    if maxRow > 2:   
         if not os.path.exists(path):
             os.makedirs(path)
 
