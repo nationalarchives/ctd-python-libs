@@ -1,9 +1,11 @@
 # Functions related to reading and writing data from spreadsheets
 
-import os, re, shutil, csv
+import os #, re, shutil, csv
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
-from pathlib import Path
+#from pathlib import Path
+
+'''Version 1.0'''
 
 def getSpreadsheetValues(filename):
     ''' Gets spreadsheet by name and returns the spreadsheet as a worksheet and a list of column headings '''
