@@ -5,11 +5,13 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
 #from pathlib import Path
 
-'''Version 2.0'''
-''' Version 2.0 adds the ability to deal with spreadsheets with multiple sheets'''
+''' Version 3.0
+    Version 2.0 adds the ability to deal with spreadsheets with multiple sheets
+    Version 3.0 adds the ability to change the column headers
+'''
 
 def getSpreadsheetValues(filename, sheetname = ""):
-    ''' Gets spreadsheet by name and returns the specified sheet from the spreadsheet as a worksheet and a list of column headings. 
+    ''' Gets spreadsheet by name and returns the specified sheet from the spreadsheet as a worksheet. 
         If no sheet is specified it defaults to returning the first sheet '''
     #path = os.path.join('data', filename) 
     wb = load_workbook(filename)
@@ -27,7 +29,29 @@ def getSpreadsheetValues(filename, sheetname = ""):
         if len(column) > 0 and column.count("") != len(column):
             values[str(column[0]).strip()] = column[1:]
             
-    return (values)
+    return values
+
+def replaceColumnHeaders(sheet, newHeaders):
+    ''' Changes the names of the column headers in the given sheet to those listed in the given list '''
+    count = 0
+    newSheet = {}
+
+    for column in sheet.values():
+        if len(newHeaders) > count:
+            newSheet[str(newHeaders[count])] = column
+        else:
+            newSheet[str(count + 1)] = column
+            print("Warning: replacement headers less than number of columns - column count used for remaining columns")
+
+        count += 1
+
+    if len(newHeaders) > count:
+        print("Warning: replacement headers greater than number of columns - blank columns added for the remaining column heading")       
+        for newHeader in newHeaders[count:]:
+            newSheet[str(newHeader)] = []
+
+    return newSheet
+    
 
 def getSheetListByFilename(filename):
     ''' Get list of sheets in the specified workbook '''
@@ -39,7 +63,7 @@ def getFileList(myDir):
     return [file for file in myDir.glob("[!~.]*.xlsx")]
 
 
-def createSheetWithValues(workbook, values, newValues, sheetname = '', filter = False, min = ''):
+def createSheetWithValues(workbook, values, newValues = {}, sheetname = '', filter = False, min = ''):
     ''' Create a new sheet within the specified workbook with the supplied values (columns in newValues with the same title replace the original version
         in values, can also use filter columns to replace values within a column rather than an entire column)'''
 
