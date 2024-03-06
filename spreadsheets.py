@@ -3,11 +3,11 @@
 import os #, re, shutil, csv
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
-#from pathlib import Path
+
 
 ''' Version 3.0
     Version 2.0 adds the ability to deal with spreadsheets with multiple sheets
-    Version 3.0 adds the ability to change the column headers
+    Version 3.0 adds the ability to change the column headers and deal with non-unique column headers in spreadsheet
 '''
 
 def getSpreadsheetValues(filename, sheetname = ""):
@@ -21,36 +21,54 @@ def getSpreadsheetValues(filename, sheetname = ""):
     else:
         sheet = wb.worksheets[0]
     values={}
+
+    headers = [str(cell.value).strip() if cell.value is not None else "" for cell in sheet[1]]
+    header_map = getColumnHeaders(headers)
     
-    for col in sheet.columns:
+    for index, col in enumerate(sheet.columns):
         #column = [cell.value for cell in col if cell.value is not None]
         column = [cell.value if cell.value is not None else "" for cell in col]
         
         if len(column) > 0 and column.count("") != len(column):
-            values[str(column[0]).strip()] = column[1:]
+
+            values[list(header_map.keys())[index]] = column[1:]
             
-    return values
+    return (values, header_map)
 
-def replaceColumnHeaders(sheet, newHeaders):
-    ''' Changes the names of the column headers in the given sheet to those listed in the given list '''
+def getColumnHeaders(input_headers):
+    ''' Get a list of unique headers for use in the spreadsheet processing, dealing with any repetition in the headings so that all heading are unique
+    
+        Keyword arguments:
+        input_headers -- list of headers from the spreadsheet being processed
+
+        return dictionary: with mapping between original headings (values) and headings to be used during the processing (keys). If all the headings are unique then both key and value will be the same
+    '''
+    if len(input_headers) == len(set(input_headers)):
+        # unique headings so keys and values are the same
+        return dict(zip(input_headers, input_headers))
+    else:        
+        # non-unique headers so renaming headers which are repeated
+        new_headings = [input_headers[i] if input_headers.count(input_headers[i]) < 2 else str(input_headers[i]) + "_" + str(input_headers[:i+1].count(input_headers[i])) for i in range(len(input_headers))]
+        return dict(zip(new_headings, input_headers))
+
+
+def replaceColumnHeaders(existing_mapping, new_headers):
+    ''' Changes the names of the output column headers in the given mapping to those listed in the given list '''
     count = 0
-    newSheet = {}
+    newMapping = {}
 
-    for column in sheet.values():
-        if len(newHeaders) > count:
-            newSheet[str(newHeaders[count])] = column
+    for unique_heading in existing_mapping.keys():
+        if len(new_headers) > count:
+            newMapping[unique_heading] = new_headers[count]
         else:
-            newSheet[str(count + 1)] = column
-            print("Warning: replacement headers less than number of columns - column count used for remaining columns")
-
+            newMapping[unique_heading] = str(count + 1)
+            print("Warning: replacement headers less than number of columns - column count used for remaining heading")
         count += 1
 
-    if len(newHeaders) > count:
-        print("Warning: replacement headers greater than number of columns - blank columns added for the remaining column heading")       
-        for newHeader in newHeaders[count:]:
-            newSheet[str(newHeader)] = []
+    if len(new_headers) > count:
+        print("Warning: replacement headers greater than number of columns - trailing columns ignored")       
 
-    return newSheet
+    return newMapping
     
 
 def getSheetListByFilename(filename):
@@ -63,7 +81,7 @@ def getFileList(myDir):
     return [file for file in myDir.glob("[!~.]*.xlsx")]
 
 
-def createSheetWithValues(workbook, values, newValues = {}, sheetname = '', filter = False, min = ''):
+def createSheetWithValues(workbook, values, heading_mapping, newValues = {}, sheetname = '', filter = False, min = ''):
     ''' Create a new sheet within the specified workbook with the supplied values (columns in newValues with the same title replace the original version
         in values, can also use filter columns to replace values within a column rather than an entire column)'''
 
@@ -79,7 +97,7 @@ def createSheetWithValues(workbook, values, newValues = {}, sheetname = '', filt
     #print(newValues)
     
     for title, column in values.items():
-        newSheet.cell(1, col, title).font = Font(bold=True)
+        newSheet.cell(1, col, heading_mapping[title]).font = Font(bold=True)
     
         row = 2
         
