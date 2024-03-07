@@ -49,7 +49,3 @@ def testColumnHeadings():
     
     s.saveWorkbook(new_workbook, "data/", "Output1.xlsx")   
 
-    
-
-
-testColumnHeadings()
